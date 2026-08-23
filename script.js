@@ -76,14 +76,15 @@ function getParam(name) {
 }
 
 function buildUrl(path, params = {}) {
-  const search = new URLSearchParams();
+  const url = new URL(path, window.location.href);
+
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {
-      search.set(key, value);
+      url.searchParams.set(key, value);
     }
   });
-  const query = search.toString();
-  return query ? `${path}?${query}` : path;
+
+  return url.toString();
 }
 
 function categoryUrl(categoryId, subcategoryId = "") {
@@ -422,30 +423,30 @@ async function loadHomePage() {
     });
   }
 
-  async function renderHome() {
-    const state = await loadSiteState();
-    const categories = state.categories || [];
+async function renderHome() {
+  const state = await loadSiteState();
+  const categories = state.categories || [];
 
-    if (dashboard) {
-      dashboard.innerHTML = categories
-        .map((category, index) => {
-          const subchips = (category.subcategories || [])
-            .map((sub) => `<span class="subchip">${escapeHtml(sub.label)}</span>`)
-            .join("");
+  if (!dashboard) return;
 
-          return `
-            <a href="${categoryUrl(category.id)}" class="category ${category.className || "custom"}">
-              <span class="number">${String(index + 1).padStart(2, "0")}</span>
-              <div class="category-content">
-                <h2>${escapeHtml(category.label)}</h2>
-                <div class="subcategories">${subchips}</div>
-              </div>
-            </a>
-          `;
-        })
+  dashboard.innerHTML = categories
+    .map((category, index) => {
+      const subchips = (category.subcategories || [])
+        .map((sub) => `<span class="subchip">${escapeHtml(sub.label)}</span>`)
         .join("");
-    }
-  }
+
+      return `
+        <a href="${categoryUrl(category.id)}" class="category ${category.className || "custom"}">
+          <span class="number">${String(index + 1).padStart(2, "0")}</span>
+          <div class="category-content">
+            <h2>${escapeHtml(category.label)}</h2>
+            <div class="subcategories">${subchips}</div>
+          </div>
+        </a>
+      `;
+    })
+    .join("");
+}
 
   await renderHome();
 
@@ -532,15 +533,20 @@ async function loadCategoryPage() {
     return;
   }
 
-  const category = findCategoryByRaw(categories, categoryRaw);
+  const decodedCategoryRaw = decodeURIComponent(categoryRaw);
+  const decodedSubcategoryRaw = decodeURIComponent(subcategoryRaw);
+
+  let category = findCategoryByRaw(categories, decodedCategoryRaw);
 
   if (!category) {
-    titleEl.textContent = "Category not found";
-    pathEl.textContent = "";
-    descriptionEl.textContent = "";
-    subcategoryList.innerHTML = "";
-    entriesContainer.innerHTML = "<p class='empty-state'>Unknown category.</p>";
-    return;
+    category = {
+      id: decodedCategoryRaw,
+      label: decodedCategoryRaw,
+      className: "custom",
+      aliases: [decodedCategoryRaw],
+      subcategories: [],
+      isCustom: true,
+    };
   }
 
   const actionBar = newEntryLink.parentElement;
@@ -579,20 +585,19 @@ async function loadCategoryPage() {
   const categoryIndex = getCategoryIndexText(categories, category.id);
 
   if (subcategoryRaw) {
-    const subcategory = findSubcategoryByRaw(category, subcategoryRaw);
+    const subcategory = findSubcategoryByRaw(category, decodedSubcategoryRaw);
 
-    titleEl.textContent = subcategory ? subcategory.label : subcategoryRaw;
+    titleEl.textContent = subcategory ? subcategory.label : decodedSubcategoryRaw;
     pathEl.innerHTML = `
       <a href="${categoryUrl(category.id)}">${escapeHtml(category.label)}</a> /
-      <a href="${categoryUrl(category.id, subcategory ? subcategory.id : subcategoryRaw)}">${escapeHtml(subcategory ? subcategory.label : subcategoryRaw)}</a>
+      <a href="${categoryUrl(category.id, subcategory ? subcategory.id : decodedSubcategoryRaw)}">${escapeHtml(subcategory ? subcategory.label : decodedSubcategoryRaw)}</a>
     `;
-    descriptionEl.textContent = "";
     if (pageNumber) pageNumber.textContent = subcategory ? getSubcategoryIndexText(category, subcategory) : "";
 
     newEntryLink.textContent = "+ NEW ENTRY";
     newEntryLink.href = buildUrl(PAGE.newEntry, {
       category: category.id,
-      subcategory: subcategory ? subcategory.id : subcategoryRaw,
+      subcategory: subcategory ? subcategory.id : decodedSubcategoryRaw,
     });
     newEntryLink.onclick = null;
 
@@ -601,7 +606,7 @@ async function loadCategoryPage() {
     const categoryVariants = getCategoryVariants(category);
     const subcategoryVariants = subcategory
       ? getSubcategoryVariants(subcategory)
-      : uniqStrings([subcategoryRaw]);
+      : uniqStrings([decodedSubcategoryRaw]);
 
     const { data, error } = await supabaseClient
       .from("articles")
@@ -701,6 +706,8 @@ async function loadCategoryPage() {
     entriesContainer.innerHTML = "";
     return;
   }
+
+  subcategoryList.classList.add("reorder-mode");
 
   subcategoryList.innerHTML = subs
     .map(
