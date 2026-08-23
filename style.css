@@ -851,8 +851,8 @@ button[data-cmd="underline"] { text-decoration: underline; }
     grid-template-columns: 84px minmax(0, 1fr);
   }
 
-  .article-content {
-    font-size: 12px;
+  .article h1 {
+  font-size: 20px;
   }
 
   .home-footer,
@@ -871,8 +871,12 @@ button[data-cmd="underline"] { text-decoration: underline; }
     font-size: 18px;
   }
 
-  .article h1 {
-    font-size: 44px;
+   .article h1 {
+    font-size: 40px;
+  }
+
+  .article-content {
+    font-size: 13px;
   }
 
   .title-input {
