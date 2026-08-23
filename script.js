@@ -1238,3 +1238,21 @@ async function deleteCategoryAndArticles(categoryId) {
     alert("DELETE ERROR:\n\n" + error.message);
   }
 }
+
+
+function autoResizeTextarea(textarea) {
+  if (!textarea) return;
+
+  const resize = () => {
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  };
+
+  textarea.addEventListener("input", resize);
+  window.addEventListener("load", resize);
+  window.addEventListener("resize", resize);
+  resize();
+}
+
+autoResizeTextarea(document.getElementById("edit-title"));
+
