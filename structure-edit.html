@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Structure — YENA</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <main class="page">
+    <header class="page-header">
+      <a href="#" id="back-link" class="back">← BACK</a>
+
+      <div class="article-header-right">
+        <span class="page-number" id="structure-kind"></span>
+        <div class="article-actions">
+          <button id="save-structure-button" class="action-button" type="button">SAVE</button>
+          <button id="delete-structure-button" class="action-button danger" type="button">DELETE</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="editor">
+      <p class="page-label" id="structure-parent"></p>
+
+      <input
+        type="text"
+        id="structure-label"
+        class="title-input"
+        placeholder="NAME"
+      />
+
+      <div class="editor-bottom">
+        <div class="editor-info" id="structure-id"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="supabase.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

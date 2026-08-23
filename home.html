@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YENA — Personal Archive</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <main class="home" id="app">
+    <header class="site-header">
+      <div class="logo">YENA</div>
+      <button id="logout" class="logout-button">LOG OUT</button>
+    </header>
+
+    <section class="dashboard" id="dashboard"></section>
+
+    <section class="home-actions">
+      <button id="add-category-button" class="add-category-button">+ ADD CATEGORY</button>
+    </section>
+
+    <footer class="site-footer home-footer">
+      <span>YENA / PERSONAL ARCHIVE</span>
+      <a
+        href="https://supabase.com/dashboard/project/wgjjscqorifyfmrfneth/editor/17485"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="plain-link"
+      >
+        DATABASE
+      </a>
+    </footer>
+  </main>
+
+  <script src="supabase.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

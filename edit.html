@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Article — YENA</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <main class="page">
+    <header class="page-header">
+      <a href="#" id="back-link" class="back">← BACK</a>
+
+      <div class="article-header-right">
+        <span class="page-number">EDIT ARTICLE</span>
+        <div class="article-actions">
+          <button id="save-edit-button" class="action-button" type="button">SAVE</button>
+          <button id="delete-edit-button" class="action-button danger" type="button">DELETE</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="editor">
+      <p class="page-label" id="article-category"></p>
+
+      <div class="editor-toolbar">
+        <button type="button" data-cmd="bold">B</button>
+        <button type="button" data-cmd="italic">I</button>
+        <button type="button" data-cmd="underline">U</button>
+        <button type="button" data-cmd="indent">→</button>
+        <button type="button" data-cmd="outdent">←</button>
+        <button type="button" data-cmd="insertUnorderedList">• List</button>
+        <button type="button" data-cmd="insertOrderedList">1. List</button>
+
+        <button type="button" class="hl" data-color="#f2c94c">Y</button>
+        <button type="button" class="hl" data-color="#8db596">G</button>
+        <button type="button" class="hl" data-color="#77a9d4">B</button>
+        <button type="button" class="hl" data-color="#f04e3e">R</button>
+        <button type="button" class="hl" data-color="#f3a6c6">P</button>
+
+        <button type="button" id="clear-format-btn">Clear</button>
+        <button type="button" id="image-btn">Image</button>
+        <input type="file" id="image-upload" accept="image/*" hidden />
+      </div>
+
+      <textarea id="edit-title" class="title-input" placeholder="TITLE"></textarea>
+
+
+      <div
+        id="edit-content"
+        class="content-input editor-surface"
+        contenteditable="true"
+        spellcheck="true"
+      ></div>
+
+      <div class="editor-bottom">
+        <div class="editor-info" id="edit-meta"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="supabase.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
