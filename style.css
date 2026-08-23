@@ -880,7 +880,17 @@ button[data-cmd="underline"] { text-decoration: underline; }
   }
 
   .title-input {
+    width: 100%;
     font-size: 42px;
+    height: auto;
+    min-height: 1.2em;
+    max-height: none;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    overflow: hidden;
+    resize: none;
+    line-height: 1.05;
   }
 }
 
