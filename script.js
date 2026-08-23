@@ -91,11 +91,19 @@ function categoryUrl(categoryId, subcategoryId = "") {
   return buildUrl(PAGE.category, { category: categoryId, subcategory: subcategoryId });
 }
 
+function makeSafeId(prefix = "item") {
+  return `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
+}
+
+function makeIdFromLabel(label, prefix = "item") {
+  const slug = slugify(label);
+  return slug || makeSafeId(prefix);
+}
+
 function normalizeSubcategory(subcategory) {
   const label = String(subcategory?.label || "").trim();
-  const id = String(subcategory?.id || slugify(label)).trim();
+  const id = String(subcategory?.id || "").trim() || makeIdFromLabel(label, "sub");
   const aliases = uniqStrings([...(subcategory?.aliases || []), label]);
-
   const positionValue = Number(subcategory?.position);
   const position = Number.isFinite(positionValue) ? positionValue : null;
 
@@ -109,7 +117,7 @@ function normalizeSubcategory(subcategory) {
 
 function normalizeCategory(category) {
   const label = String(category?.label || "").trim();
-  const id = String(category?.id || slugify(label)).trim();
+  const id = String(category?.id || "").trim() || makeIdFromLabel(label, "cat");
   const aliases = uniqStrings([...(category?.aliases || []), label]);
 
   const subcategories = Array.isArray(category?.subcategories)
