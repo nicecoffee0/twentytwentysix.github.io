@@ -468,61 +468,108 @@ function setupRichEditor(
     event.preventDefault();
   });
 
+  editor.addEventListener("paste", (event) => {
+    event.preventDefault();
 
-editor.addEventListener("paste", (event) => {
-  event.preventDefault();
+    const html = event.clipboardData.getData("text/html");
+    const plainText = event.clipboardData.getData("text/plain");
 
-  const html = event.clipboardData.getData("text/html");
-  const plainText = event.clipboardData.getData("text/plain");
+    /*
+    * OUR CONTENT
+    * Preserve the formatting when copying from our own editor.
+    */
+    if (html) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
 
-  /*
-   * OUR CONTENT
-   * Preserve formatting.
-   */
-  if (html && html.includes('data-yena-content="true"')) {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
+      const yenaContent = doc.querySelector('[data-yena-content="true"]');
 
-    const content = doc.querySelector("[data-yena-content]");
+      if (yenaContent) {
+        document.execCommand(
+          "insertHTML",
+          false,
+          yenaContent.innerHTML
+        );
 
-    if (content) {
-      document.execCommand(
-        "insertHTML",
-        false,
-        content.innerHTML
-      );
-
-      return;
-    }
-  }
-
-  /*
-   * EXTERNAL CONTENT
-   * Strip formatting.
-   */
-  const cleanText = plainText
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .replace(/\u00A0/g, " ");
-
-  const lines = cleanText.split("\n");
-
-  const cleanHtml = lines
-    .map((line) => {
-      if (line.trim() === "") {
-        return "<br>";
+        return;
       }
 
-      return escapeHtml(line);
-    })
-    .join("<br>");
+      /*
+      * Browsers sometimes remove custom data attributes
+      * from clipboard HTML.
+      *
+      * If the HTML looks like our editor's formatting,
+      * preserve the useful formatting instead of converting
+      * everything to plain text.
+      */
+      const hasOurFormatting =
+        doc.querySelector(
+          "strong, b, em, i, u, mark, ul, ol, li, blockquote, a, img"
+        );
 
-  document.execCommand(
-    "insertHTML",
-    false,
-    cleanHtml
-  );
-});
+      if (hasOurFormatting) {
+        const body = doc.body;
+
+        /*
+        * Remove external styling that we don't want.
+        * Keep the actual semantic formatting.
+        */
+        body.querySelectorAll("*").forEach((element) => {
+          element.removeAttribute("style");
+          element.removeAttribute("class");
+          element.removeAttribute("id");
+
+          /*
+          * Keep only useful attributes.
+          */
+          [...element.attributes].forEach((attr) => {
+            if (
+              attr.name !== "href" &&
+              attr.name !== "src" &&
+              attr.name !== "alt"
+            ) {
+              element.removeAttribute(attr.name);
+            }
+          });
+        });
+
+        document.execCommand(
+          "insertHTML",
+          false,
+          body.innerHTML
+        );
+
+        return;
+      }
+    }
+
+    /*
+    * EXTERNAL PLAIN TEXT
+    * Convert pasted text into our normal line structure.
+    */
+    const cleanText = plainText
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      .replace(/\u00A0/g, " ");
+
+    const lines = cleanText.split("\n");
+
+    const cleanHtml = lines
+      .map((line) => {
+        if (line.trim() === "") {
+          return "<br>";
+        }
+
+        return escapeHtml(line);
+      })
+      .join("<br>");
+
+    document.execCommand(
+      "insertHTML",
+      false,
+      cleanHtml
+    );
+  });
 
   /*
    * TAB INDENTATION
