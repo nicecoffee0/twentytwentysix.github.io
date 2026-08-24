@@ -11,7 +11,7 @@
 
   <main class="page">
     <header class="page-header">
-      <a href="#" id="back-link" class="back">← BACK</a>
+      <a href="#" class="back" onclick="event.preventDefault(); window.history.back();">← BACK</a>
 
       <div class="article-header-right">
         <span class="page-number" id="structure-kind"></span>
@@ -25,12 +25,7 @@
     <section class="editor">
       <p class="page-label" id="structure-parent"></p>
 
-      <input
-        type="text"
-        id="structure-label"
-        class="title-input"
-        placeholder="NAME"
-      />
+      <textarea id="structure-label" class="title-input" placeholder="NAME"></textarea>
 
       <div class="editor-bottom">
         <div class="editor-info" id="structure-id"></div>
