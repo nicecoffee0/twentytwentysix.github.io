@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Category — YENA</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <main class="page">
+    <header class="page-header">
+      <a href="home.html" id="back-link" class="back">← BACK</a>
+
+      <div class="article-header-right">
+        <span class="page-number" id="page-number"></span>
+
+        <div class="article-actions">
+          <a id="edit-structure-button" class="action-button action-button-alt" href="#">EDIT</a>
+          <a id="new-entry-link" class="action-button" href="#">+ ADD</a>
+        </div>
+      </div>
+    </header>
+
+    <section class="page-intro">
+      <p class="page-label" id="category-path"></p>
+      <h1 id="category-title"></h1>
+      <p class="page-description" id="category-description"></p>
+    </section>
+
+    <section id="subcategory-list" class="subsections"></section>
+    <section class="entries" id="entries"></section>
+  </main>
+
+  <script src="supabase.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
