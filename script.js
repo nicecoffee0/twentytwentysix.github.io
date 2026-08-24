@@ -8,6 +8,8 @@ const PAGE = {
   structureEdit: "structure-edit.html",
 };
 
+
+
 const ARCHIVE_STATE_TABLE = "archive_state";
 let siteStateCache = null;
 
@@ -144,6 +146,7 @@ function normalizeSiteState(rawState) {
   };
 }
 
+
 async function loadSiteState() {
   if (siteStateCache) return siteStateCache;
 
@@ -246,7 +249,13 @@ function buildEntryMarkup(entry, href, variant = "list") {
         <div class="entry-preview-date">${formatDate(entry.created_at)}</div>
         <div class="entry-preview-body">
           <strong>${escapeHtml(entry.title)}</strong>
-          <span>${escapeHtml(getExcerpt(entry.content || "", 90))}</span>
+          <span class="${/[가-힣]/.test(getExcerpt(entry.content || "", 130)) ? "korean-excerpt" : "english-excerpt"}">
+            ${escapeHtml(
+              /[가-힣]/.test(entry.content || "")
+                ? getExcerpt(entry.content || "", 90)  // korean
+                : getExcerpt(entry.content || "", 170)  // english
+            )}
+          </span>
         </div>
       </a>
     `;
@@ -257,7 +266,13 @@ function buildEntryMarkup(entry, href, variant = "list") {
       <div class="entry-date">${formatDate(entry.created_at)}</div>
       <div class="entry-body">
         <strong>${escapeHtml(entry.title)}</strong>
-        <span>${escapeHtml(getExcerpt(entry.content || "", 130))}</span>
+        <span class="${/[가-힣]/.test(getExcerpt(entry.content || "", 130)) ? "korean-excerpt" : "english-excerpt"}">
+          ${escapeHtml(
+            /[가-힣]/.test(entry.content || "")
+              ? getExcerpt(entry.content || "", 90)  // korean
+              : getExcerpt(entry.content || "", 170)  // english
+          )}
+        </span>
       </div>
     </a>
   `;
@@ -444,7 +459,11 @@ async function renderHome() {
         .join("");
 
       return `
-        <a href="${categoryUrl(category.id)}" class="category ${category.className || "custom"}">
+        <a
+          href="${categoryUrl(category.id)}"
+          class="category"
+          style="background: var(--category-${index + 1}, var(--paper));"
+        >
           <span class="number">${String(index + 1).padStart(2, "0")}</span>
           <div class="category-content">
             <h2>${escapeHtml(category.label)}</h2>
@@ -588,6 +607,21 @@ async function loadCategoryPage() {
     if (deleteCategoryButton) {
       deleteCategoryButton.remove();
     }
+
+
+    const backLink = document.getElementById("back-link");
+
+    if (backLink) {
+      if (subcategoryRaw) {
+        // SUBCATEGORY PAGE → CATEGORY PAGE
+        backLink.href = `category.html?category=${encodeURIComponent(category.id)}`;
+      } else {
+        // CATEGORY PAGE → HOME PAGE
+        backLink.href = "home.html";
+      }
+    }
+
+
   }
 
   const categoryIndex = getCategoryIndexText(categories, category.id);
@@ -705,7 +739,7 @@ async function loadCategoryPage() {
               <span class="subsection-number">${formatIndex(index + 1)}</span>
               <h2>${escapeHtml(sub.label)}</h2>
             </div>
-            <span class="arrow">↗</span>
+            <span class="arrow">↗︎</span>
           </a>
         `
       )
@@ -726,7 +760,7 @@ async function loadCategoryPage() {
               <span class="subsection-number">${formatIndex(index + 1)}</span>
               <h2>${escapeHtml(sub.label)}</h2>
             </div>
-            <span class="arrow">↗</span>
+            <span class="arrow">↗︎</span>
           </a>
 
           <div class="reorder-buttons">
@@ -755,6 +789,7 @@ async function loadNewEntryPage() {
   if (!session) return;
 
   const titleInput = document.getElementById("title");
+    autoGrowTitle(titleInput);
   const contentEditor = document.getElementById("content");
   const categoryLabel = document.getElementById("article-category");
   const backLink = document.getElementById("back-link");
@@ -784,7 +819,11 @@ async function loadNewEntryPage() {
 
   saveButton.onclick = async () => {
     const title = titleInput.value.trim();
-    const contentHtml = contentEditor.innerHTML.trim();
+    const contentHtml = contentEditor.innerHTML
+      .replace(/&nbsp;/g, " ")
+      .replace(/\u00A0/g, " ")
+      .trim();
+      
 
     if (!title || !hasRenderableContent(contentHtml)) {
       alert("Please enter a title and some content.");
@@ -809,6 +848,7 @@ async function loadNewEntryPage() {
 
     window.location.href = categoryUrl(categoryId, subcategoryId);
   };
+
 }
 
 async function loadArticlePage() {
@@ -913,6 +953,8 @@ async function loadArticlePage() {
       .map((entry) => buildEntryMarkup(entry, `${PAGE.article}?id=${entry.id}`, "preview"))
       .join("");
   }
+
+
 }
 
 async function loadEditPage() {
@@ -920,6 +962,7 @@ async function loadEditPage() {
   if (!session) return;
 
   const titleInput = document.getElementById("edit-title");
+    autoGrowTitle(titleInput);
   const contentEditor = document.getElementById("edit-content");
   const categoryLabel = document.getElementById("article-category");
   const meta = document.getElementById("edit-meta");
@@ -968,7 +1011,10 @@ async function loadEditPage() {
 
   saveButton.onclick = async () => {
     const newTitle = titleInput.value.trim();
-    const newContent = contentEditor.innerHTML.trim();
+    const newContent = contentEditor.innerHTML
+      .replace(/&nbsp;/g, " ")
+      .replace(/\u00A0/g, " ")
+      .trim();
 
     if (!newTitle || !hasRenderableContent(newContent)) {
       alert("Please enter a title and some content.");
@@ -1009,6 +1055,8 @@ async function loadEditPage() {
     const subcategoryId = subcategory ? subcategory.id : data.subcategory;
     window.location.href = categoryUrl(categoryId, subcategoryId);
   };
+
+
 }
 
 async function loadStructureEditPage() {
@@ -1239,7 +1287,6 @@ async function deleteCategoryAndArticles(categoryId) {
   }
 }
 
-
 function autoResizeTextarea(textarea) {
   if (!textarea) return;
 
@@ -1256,3 +1303,16 @@ function autoResizeTextarea(textarea) {
 
 autoResizeTextarea(document.getElementById("edit-title"));
 
+
+function autoGrowTitle(textarea) {
+  if (!textarea) return;
+
+  const resize = () => {
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  };
+
+  textarea.addEventListener("input", resize);
+
+  resize();
+}
