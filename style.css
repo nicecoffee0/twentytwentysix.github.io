@@ -881,6 +881,41 @@ button[data-cmd="underline"] { text-decoration: underline; }
 
 
 
+
+/* embedding videos and stuff */
+
+.embed-container {
+  width: 100%;
+  margin: 24px 0;
+}
+
+.embed-container iframe {
+  display: block;
+  width: 100%;
+  height: 500px;
+  border: 0;
+}
+
+.embed-container:not(.embed-sheet):not(.embed-document):not(.embed-slides) iframe {
+  aspect-ratio: 16 / 9;
+  height: auto;
+}
+
+.embed-sheet iframe {
+  height: 600px;
+}
+
+.embed-document iframe {
+  height: 700px;
+}
+
+.embed-slides iframe {
+  aspect-ratio: 16 / 9;
+  height: auto;
+}
+
+
+
 /* Mobile */
 @media (max-width: 900px) {
   .home,
@@ -974,4 +1009,5 @@ button[data-cmd="underline"] { text-decoration: underline; }
     display: none;
   }
 }
+
 
