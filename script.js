@@ -312,7 +312,11 @@ async function uploadImageFile(file) {
   return data.publicUrl;
 }
 
-function setupRichEditor(editorId, uploadInputId = "image-upload", imageButtonId = "image-btn") {
+function setupRichEditor(
+  editorId,
+  uploadInputId = "image-upload",
+  imageButtonId = "image-btn"
+) {
   const editor = document.getElementById(editorId);
   const toolbar = document.querySelector(".editor-toolbar");
   const uploadInput = ensureUploadInput(uploadInputId);
@@ -320,7 +324,9 @@ function setupRichEditor(editorId, uploadInputId = "image-upload", imageButtonId
   if (!editor || !toolbar) return;
 
   toolbar.addEventListener("mousedown", (event) => {
-    if (event.target.closest("button")) event.preventDefault();
+    if (event.target.closest("button")) {
+      event.preventDefault();
+    }
   });
 
   toolbar.addEventListener("click", async (event) => {
@@ -328,6 +334,10 @@ function setupRichEditor(editorId, uploadInputId = "image-upload", imageButtonId
     if (!button) return;
 
     const cmd = button.dataset.cmd;
+
+    /*
+     * NORMAL FORMATTING
+     */
 
     if (
       cmd === "bold" ||
@@ -343,12 +353,20 @@ function setupRichEditor(editorId, uploadInputId = "image-upload", imageButtonId
       return;
     }
 
+    /*
+     * HIGHLIGHT
+     */
+
     if (button.classList.contains("hl")) {
       const color = button.dataset.color;
       document.execCommand("hiliteColor", false, color);
       editor.focus();
       return;
     }
+
+    /*
+     * CLEAR FORMAT
+     */
 
     if (button.id === "clear-format-btn") {
       document.execCommand("removeFormat", false, null);
@@ -357,15 +375,90 @@ function setupRichEditor(editorId, uploadInputId = "image-upload", imageButtonId
       return;
     }
 
+    /*
+     * IMAGE
+     */
+
     if (button.id === imageButtonId) {
       uploadInput.click();
       editor.focus();
+      return;
+    }
+
+    /*
+     * EMBED
+     */
+
+    if (button.id === "embed-btn") {
+      const url = prompt(
+        "Paste a YouTube, Google Sheets, Google Docs, Google Slides, or other embed URL:"
+      );
+
+      if (!url) return;
+
+      const embedHtml = createEmbedHtml(url.trim());
+
+      if (!embedHtml) {
+        alert(
+          "Sorry, this URL isn't supported yet.\n\n" +
+          "Currently supported:\n" +
+          "• YouTube\n" +
+          "• Google Sheets\n" +
+          "• Google Docs\n" +
+          "• Google Slides"
+        );
+        return;
+      }
+
+      editor.focus();
+
+      document.execCommand(
+        "insertHTML",
+        false,
+        embedHtml + "<p><br></p>"
+      );
+
+      return;
     }
   });
+
+  /*
+   * PASTE AS CLEAN TEXT
+   */
+
+  editor.addEventListener("paste", (event) => {
+    event.preventDefault();
+
+    const text = event.clipboardData.getData("text/plain");
+
+    const cleanText = text
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      .replace(/\u00A0/g, " ");
+
+    const lines = cleanText.split("\n");
+
+    const html = lines
+      .map((line) => {
+        if (line.trim() === "") {
+          return "<br>";
+        }
+
+        return escapeHtml(line);
+      })
+      .join("<br>");
+
+    document.execCommand("insertHTML", false, html);
+  });
+
+  /*
+   * TAB INDENTATION
+   */
 
   editor.addEventListener("keydown", (event) => {
     if (event.key === "Tab") {
       event.preventDefault();
+
       if (event.shiftKey) {
         document.execCommand("outdent", false, null);
       } else {
@@ -374,20 +467,128 @@ function setupRichEditor(editorId, uploadInputId = "image-upload", imageButtonId
     }
   });
 
+  /*
+   * IMAGE UPLOAD
+   */
+
   uploadInput.onchange = async () => {
     const file = uploadInput.files && uploadInput.files[0];
     if (!file) return;
 
     try {
       const url = await uploadImageFile(file);
+
       editor.focus();
-      document.execCommand("insertImage", false, url);
+
+      document.execCommand(
+        "insertImage",
+        false,
+        url
+      );
     } catch (error) {
       alert(`IMAGE UPLOAD ERROR:\n\n${error.message}`);
     } finally {
       uploadInput.value = "";
     }
   };
+}
+
+
+/*
+ * CREATE EMBED HTML
+ */
+
+function createEmbedHtml(url) {
+  /*
+   * YOUTUBE
+   */
+
+  let match = url.match(
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/]+)/
+  );
+
+  if (match) {
+    const videoId = match[1];
+
+    return `
+      <div class="embed-container">
+        <iframe
+          src="https://www.youtube.com/embed/${videoId}"
+          title="YouTube video"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen>
+        </iframe>
+      </div>
+    `;
+  }
+
+  /*
+   * GOOGLE SHEETS
+   */
+
+  if (
+    url.includes("docs.google.com/spreadsheets/")
+  ) {
+    return `
+      <div class="embed-container embed-sheet">
+        <iframe
+          src="${escapeAttribute(url)}"
+          frameborder="0">
+        </iframe>
+      </div>
+    `;
+  }
+
+  /*
+   * GOOGLE DOCS
+   */
+
+  if (
+    url.includes("docs.google.com/document/")
+  ) {
+    return `
+      <div class="embed-container embed-document">
+        <iframe
+          src="${escapeAttribute(url)}"
+          frameborder="0">
+        </iframe>
+      </div>
+    `;
+  }
+
+  /*
+   * GOOGLE SLIDES
+   */
+
+  if (
+    url.includes("docs.google.com/presentation/")
+  ) {
+    return `
+      <div class="embed-container embed-slides">
+        <iframe
+          src="${escapeAttribute(url)}"
+          frameborder="0"
+          allowfullscreen>
+        </iframe>
+      </div>
+    `;
+  }
+
+  return null;
+}
+
+
+/*
+ * SAFELY ESCAPE AN ATTRIBUTE
+ */
+
+function escapeAttribute(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 async function requireSessionOrRedirect() {
