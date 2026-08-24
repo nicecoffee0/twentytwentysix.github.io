@@ -582,8 +582,10 @@ background: #d98b5f; /* dusty berry */
   line-height: 1.8;
 }
 
-.article-content p {
-  margin-bottom: 30px;
+.article-content p,
+.article-content div {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .article-content img,
@@ -942,6 +944,7 @@ button[data-cmd="underline"] { text-decoration: underline; }
 
   .article-content {
     font-size: 14px;
+    line-height: 1.5;
   }
 
 
