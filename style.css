@@ -584,8 +584,8 @@ background: #d98b5f; /* dusty berry */
 
 .article-content p,
 .article-content div {
-  margin-top: 0;
-  margin-bottom: 0;
+  margin-top: 9px;
+  margin-bottom: 9px;
 }
 
 .article-content img,
@@ -679,8 +679,9 @@ background: #d98b5f; /* dusty berry */
   color: rgba(17, 17, 17, 0.66);
   font-family: Georgia, serif;
 
-  max-height: calc(1.35em * 2);
+  max-height: calc(1.35em * 1);
   overflow: hidden;
+  
 }
 
 /* Editor */
@@ -787,6 +788,12 @@ button[data-cmd="underline"] { text-decoration: underline; }
   font-family: Georgia, serif;
   font-size: var(--editor-body-size);
   line-height: 1.8;
+}
+
+.content-input p,
+.content-input div {
+  margin-top: 9px;
+  margin-bottom: 9px;
 }
 
 .editor-surface:empty::before {
