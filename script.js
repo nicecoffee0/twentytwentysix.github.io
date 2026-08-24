@@ -420,36 +420,109 @@ function setupRichEditor(
 
       return;
     }
+
+     /*
+     * GREY BOX
+     */
+
+    if (button.id === "box-btn") {
+      editor.focus();
+
+      const boxHtml = `
+        <div class="editor-note-box">
+          <div><br></div>
+        </div>
+        <p><br></p>
+      `;
+
+      document.execCommand("insertHTML", false, boxHtml);
+
+      return;
+    }
   });
 
   /*
    * PASTE AS CLEAN TEXT
    */
 
-  editor.addEventListener("paste", (event) => {
+  editor.addEventListener("copy", (event) => {
+    const selection = window.getSelection();
+
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const container = document.createElement("div");
+
+    container.appendChild(range.cloneContents());
+
+    const html = container.innerHTML;
+    const text = selection.toString();
+
+    event.clipboardData.setData(
+      "text/html",
+      `<div data-yena-content="true">${html}</div>`
+    );
+
+    event.clipboardData.setData("text/plain", text);
+
     event.preventDefault();
-
-    const text = event.clipboardData.getData("text/plain");
-
-    const cleanText = text
-      .replace(/\r\n/g, "\n")
-      .replace(/\r/g, "\n")
-      .replace(/\u00A0/g, " ");
-
-    const lines = cleanText.split("\n");
-
-    const html = lines
-      .map((line) => {
-        if (line.trim() === "") {
-          return "<br>";
-        }
-
-        return escapeHtml(line);
-      })
-      .join("<br>");
-
-    document.execCommand("insertHTML", false, html);
   });
+
+
+editor.addEventListener("paste", (event) => {
+  event.preventDefault();
+
+  const html = event.clipboardData.getData("text/html");
+  const plainText = event.clipboardData.getData("text/plain");
+
+  /*
+   * OUR CONTENT
+   * Preserve formatting.
+   */
+  if (html && html.includes('data-yena-content="true"')) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+
+    const content = doc.querySelector("[data-yena-content]");
+
+    if (content) {
+      document.execCommand(
+        "insertHTML",
+        false,
+        content.innerHTML
+      );
+
+      return;
+    }
+  }
+
+  /*
+   * EXTERNAL CONTENT
+   * Strip formatting.
+   */
+  const cleanText = plainText
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/\u00A0/g, " ");
+
+  const lines = cleanText.split("\n");
+
+  const cleanHtml = lines
+    .map((line) => {
+      if (line.trim() === "") {
+        return "<br>";
+      }
+
+      return escapeHtml(line);
+    })
+    .join("<br>");
+
+  document.execCommand(
+    "insertHTML",
+    false,
+    cleanHtml
+  );
+});
 
   /*
    * TAB INDENTATION

@@ -584,8 +584,9 @@ background: #d98b5f; /* dusty berry */
 
 .article-content p,
 .article-content div {
-  margin-top: 9px;
-  margin-bottom: 9px;
+  margin-top: 0;
+  margin-bottom: 0;
+  line-height: 1.8 !important;
 }
 
 .article-content img,
@@ -604,14 +605,40 @@ background: #d98b5f; /* dusty berry */
   font-style: italic;
 }
 
+.content-input ul,
+.content-input ol,
 .article-content ul,
 .article-content ol {
-  margin: 20px 0 20px 22px;
+  margin-top: 0.5em;
+  margin-right: 0;
+  margin-bottom: 0.5em;
+  margin-left: 22px;
+  padding-left: 1.5em;
+  line-height: 1.45;
 }
 
+.content-input li,
 .article-content li {
-  margin: 6px 0;
+  margin: 0.5em 0;
+  padding: 0;
+  line-height: 1.45;
 }
+
+.content-input li + li,
+.article-content li + li {
+  margin-top: 0;
+}
+
+/* Nested lists */
+.content-input li > ul,
+.content-input li > ol,
+.article-content li > ul,
+.article-content li > ol {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-left: 1.5em;
+}
+
 
 .article-content code {
   background: rgba(17, 17, 17, 0.08);
@@ -792,9 +819,11 @@ button[data-cmd="underline"] { text-decoration: underline; }
 
 .content-input p,
 .content-input div {
-  margin-top: 9px;
-  margin-bottom: 9px;
+  margin-top: 0;
+  margin-bottom: 0;
+  line-height: 1.8 !important;
 }
+
 
 .editor-surface:empty::before {
   content: "Write your thoughts...";
@@ -808,10 +837,6 @@ button[data-cmd="underline"] { text-decoration: underline; }
   margin: 18px 0;
 }
 
-.editor-surface ul,
-.editor-surface ol {
-  margin: 14px 0 14px 22px;
-}
 
 .editor-bottom {
   display: flex;
@@ -826,6 +851,24 @@ button[data-cmd="underline"] { text-decoration: underline; }
   letter-spacing: 1px;
   opacity: 0.5;
 }
+
+
+.editor-note-box {
+  background: #dedbd3;
+  padding: 20px 24px;
+  margin: 24px 0;
+  border-left: 3px solid var(--ink);
+  box-sizing: border-box;
+}
+
+.editor-note-box > div {
+  margin: 0;
+}
+
+.editor-note-box p {
+  margin: 0;
+}
+
 
 /* Structure editor */
 .structure-id {
