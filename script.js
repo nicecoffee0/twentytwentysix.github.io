@@ -462,7 +462,10 @@ async function renderHome() {
         <a
           href="${categoryUrl(category.id)}"
           class="category"
-          style="background: var(--category-${index + 1}, var(--paper));"
+          style="
+            --category-color: var(--category-${index + 1}, var(--paper));
+            background: var(--category-color);
+          "
         >
           <span class="number">${String(index + 1).padStart(2, "0")}</span>
           <div class="category-content">
@@ -549,7 +552,16 @@ async function loadCategoryPage() {
   const editStructureButton = document.getElementById("edit-structure-button");
   const pageNumber = document.getElementById("page-number");
 
-  if (!titleEl || !pathEl || !subcategoryList || !entriesContainer || !newEntryLink || !editStructureButton) return;
+  if (
+    !titleEl ||
+    !pathEl ||
+    !subcategoryList ||
+    !entriesContainer ||
+    !newEntryLink ||
+    !editStructureButton
+  ) {
+    return;
+  }
 
   const categoryRaw = getParam("category");
   const subcategoryRaw = getParam("subcategory") || "";
@@ -577,11 +589,54 @@ async function loadCategoryPage() {
   }
 
   const actionBar = newEntryLink.parentElement;
-  let deleteCategoryButton = document.getElementById("delete-category-button");
+  const articleActions = editStructureButton.parentElement; 
+  let deleteCategoryButton = document.getElementById(
+    "delete-category-button"
+  );
+
+  /*
+   * ============================================================
+   * EDITING / REORDER MODE
+   * ============================================================
+   */
 
   if (reorderMode) {
-    editStructureButton.textContent = "DONE";
-    editStructureButton.href = categoryUrl(category.id);
+    editStructureButton.textContent = "SAVE";
+    editStructureButton.href = "#";
+
+    editStructureButton.onclick = async (event) => {
+      event.preventDefault();
+
+      const input = document.getElementById("edit-category-title");
+      const newLabel = input ? input.value.trim() : "";
+
+      if (!newLabel) {
+        alert("Please enter a category name.");
+        return;
+      }
+
+      const freshState = deepClone(await loadSiteState());
+
+      const target = freshState.categories.find(
+        (cat) => cat.id === category.id
+      );
+
+      if (!target) return;
+
+      const oldLabel = target.label;
+
+      target.aliases = uniqStrings([
+        ...(target.aliases || []),
+        oldLabel,
+        newLabel,
+      ]);
+
+      target.label = newLabel;
+
+      await saveSiteState(freshState);
+
+      window.location.href = categoryUrl(target.id);
+    };
 
     if (!deleteCategoryButton) {
       deleteCategoryButton = document.createElement("button");
@@ -589,7 +644,11 @@ async function loadCategoryPage() {
       deleteCategoryButton.type = "button";
       deleteCategoryButton.className = "action-button danger";
       deleteCategoryButton.textContent = "DELETE";
-      actionBar.insertBefore(deleteCategoryButton, newEntryLink);
+
+      articleActions.insertBefore(
+        deleteCategoryButton,
+        editStructureButton
+      );
     } else {
       deleteCategoryButton.style.display = "inline-flex";
     }
@@ -598,54 +657,100 @@ async function loadCategoryPage() {
       await deleteCategoryAndArticles(category.id);
     };
   } else {
-    editStructureButton.textContent = "EDIT CATEGORY";
-    editStructureButton.href = buildUrl(PAGE.category, {
-      category: category.id,
-      reorder: "1",
-    });
+    /*
+     * ============================================================
+     * NORMAL MODE
+     * ============================================================
+     */
+
+    editStructureButton.onclick = null;
+
+    if (subcategoryRaw) {
+      editStructureButton.textContent = "EDIT SUBCATEGORY";
+
+      editStructureButton.href = buildUrl(PAGE.structureEdit, {
+        type: "subcategory",
+        category: category.id,
+        subcategory: decodedSubcategoryRaw,
+      });
+    } else {
+      editStructureButton.textContent = "EDIT CATEGORY";
+
+      editStructureButton.href = buildUrl(PAGE.category, {
+        category: category.id,
+        reorder: "1",
+      });
+    }
 
     if (deleteCategoryButton) {
       deleteCategoryButton.remove();
     }
 
-
     const backLink = document.getElementById("back-link");
 
     if (backLink) {
       if (subcategoryRaw) {
-        // SUBCATEGORY PAGE → CATEGORY PAGE
-        backLink.href = `category.html?category=${encodeURIComponent(category.id)}`;
+        backLink.href =
+          `category.html?category=${encodeURIComponent(category.id)}`;
       } else {
-        // CATEGORY PAGE → HOME PAGE
         backLink.href = "home.html";
       }
     }
-
-
   }
 
   const categoryIndex = getCategoryIndexText(categories, category.id);
 
-  if (subcategoryRaw) {
-    const subcategory = findSubcategoryByRaw(category, decodedSubcategoryRaw);
+  /*
+   * ============================================================
+   * SUBCATEGORY PAGE
+   * ============================================================
+   */
 
-    titleEl.textContent = subcategory ? subcategory.label : decodedSubcategoryRaw;
+  if (subcategoryRaw) {
+    const subcategory = findSubcategoryByRaw(
+      category,
+      decodedSubcategoryRaw
+    );
+
+    titleEl.textContent = subcategory
+      ? subcategory.label
+      : decodedSubcategoryRaw;
+
     pathEl.innerHTML = `
-      <a href="${categoryUrl(category.id)}">${escapeHtml(category.label)}</a> /
-      <a href="${categoryUrl(category.id, subcategory ? subcategory.id : decodedSubcategoryRaw)}">${escapeHtml(subcategory ? subcategory.label : decodedSubcategoryRaw)}</a>
+      <a href="${categoryUrl(category.id)}">
+        ${escapeHtml(category.label)}
+      </a> /
+      <a href="${categoryUrl(
+        category.id,
+        subcategory ? subcategory.id : decodedSubcategoryRaw
+      )}">
+        ${escapeHtml(
+          subcategory ? subcategory.label : decodedSubcategoryRaw
+        )}
+      </a>
     `;
-    if (pageNumber) pageNumber.textContent = subcategory ? getSubcategoryIndexText(category, subcategory) : "";
+
+    if (pageNumber) {
+      pageNumber.textContent = subcategory
+        ? getSubcategoryIndexText(category, subcategory)
+        : "";
+    }
 
     newEntryLink.textContent = "+ NEW ENTRY";
+
     newEntryLink.href = buildUrl(PAGE.newEntry, {
       category: category.id,
-      subcategory: subcategory ? subcategory.id : decodedSubcategoryRaw,
+      subcategory: subcategory
+        ? subcategory.id
+        : decodedSubcategoryRaw,
     });
+
     newEntryLink.onclick = null;
 
     subcategoryList.innerHTML = "";
 
     const categoryVariants = getCategoryVariants(category);
+
     const subcategoryVariants = subcategory
       ? getSubcategoryVariants(subcategory)
       : uniqStrings([decodedSubcategoryRaw]);
@@ -659,55 +764,100 @@ async function loadCategoryPage() {
 
     if (error) {
       console.error("LOAD CATEGORY ENTRIES ERROR:", error);
-      entriesContainer.innerHTML = "<p class='empty-state'>Could not load entries.</p>";
+
+      entriesContainer.innerHTML =
+        "<p class='empty-state'>Could not load entries.</p>";
+
       return;
     }
 
     if (!data || data.length === 0) {
-      entriesContainer.innerHTML = "<p class='empty-state'>No entries yet.</p>";
+      entriesContainer.innerHTML =
+        "<p class='empty-state'>No entries yet.</p>";
+
       return;
     }
 
     entriesContainer.innerHTML = data
-      .map((entry) => buildEntryMarkup(entry, `${PAGE.article}?id=${entry.id}`, "list"))
+      .map((entry) =>
+        buildEntryMarkup(
+          entry,
+          `${PAGE.article}?id=${entry.id}`,
+          "list"
+        )
+      )
       .join("");
 
     return;
   }
 
-  titleEl.textContent = category.label;
+  /*
+   * ============================================================
+   * CATEGORY PAGE
+   * ============================================================
+   */
+
+  if (reorderMode) {
+    titleEl.innerHTML = `
+      <textarea
+        id="edit-category-title"
+        class="title-input"
+      >${escapeHtml(category.label)}</textarea>
+    `;
+  } else {
+    titleEl.textContent = category.label;
+  }
+
   pathEl.textContent = "";
-  if (pageNumber) pageNumber.textContent = categoryIndex;
+
+  if (pageNumber) {
+    pageNumber.textContent = categoryIndex;
+  }
 
   newEntryLink.textContent = "+ ADD SUBCATEGORY";
   newEntryLink.href = "#";
+
   newEntryLink.onclick = async (event) => {
     event.preventDefault();
 
     const rawName = prompt("New subcategory name");
     const name = rawName ? rawName.trim() : "";
+
     if (!name) return;
 
     const freshState = deepClone(await loadSiteState());
-    const currentCategory = freshState.categories.find((cat) => cat.id === category.id);
+
+    const currentCategory = freshState.categories.find(
+      (cat) => cat.id === category.id
+    );
+
     if (!currentCategory) return;
 
-    if (currentCategory.subcategories.some((sub) => sub.label.toLowerCase() === name.toLowerCase())) {
+    if (
+      currentCategory.subcategories.some(
+        (sub) => sub.label.toLowerCase() === name.toLowerCase()
+      )
+    ) {
       alert("That subcategory already exists.");
       return;
     }
 
     const baseId = slugify(name) || "subcategory";
+
     let id = baseId;
     let counter = 2;
-    const existingIds = new Set(currentCategory.subcategories.map((sub) => sub.id));
+
+    const existingIds = new Set(
+      currentCategory.subcategories.map((sub) => sub.id)
+    );
 
     while (existingIds.has(id)) {
       id = `${baseId}-${counter}`;
       counter += 1;
     }
 
-    const nextPosition = currentCategory.subcategories.length + 1;
+    const nextPosition =
+      currentCategory.subcategories.length + 1;
 
     currentCategory.subcategories.push({
       id,
@@ -717,28 +867,47 @@ async function loadCategoryPage() {
     });
 
     await saveSiteState(freshState);
+
     window.location.reload();
   };
 
   const subs = (category.subcategories || []).sort(
-    (a, b) => (a.position ?? 9999) - (b.position ?? 9999)
+    (a, b) =>
+      (a.position ?? 9999) -
+      (b.position ?? 9999)
   );
 
   if (subs.length === 0) {
-    subcategoryList.innerHTML = "<p class='empty-state'>No subcategories yet.</p>";
+    subcategoryList.innerHTML =
+      "<p class='empty-state'>No subcategories yet.</p>";
+
     entriesContainer.innerHTML = "";
+
     return;
   }
+
+  /*
+   * ============================================================
+   * NORMAL CATEGORY VIEW
+   * ============================================================
+   */
 
   if (!reorderMode) {
     subcategoryList.innerHTML = subs
       .map(
         (sub, index) => `
-          <a class="subsection" href="${categoryUrl(category.id, sub.id)}">
+          <a
+            class="subsection"
+            href="${categoryUrl(category.id, sub.id)}"
+          >
             <div>
-              <span class="subsection-number">${formatIndex(index + 1)}</span>
+              <span class="subsection-number">
+                ${formatIndex(index + 1)}
+              </span>
+
               <h2>${escapeHtml(sub.label)}</h2>
             </div>
+
             <span class="arrow">↗︎</span>
           </a>
         `
@@ -746,8 +915,15 @@ async function loadCategoryPage() {
       .join("");
 
     entriesContainer.innerHTML = "";
+
     return;
   }
+
+  /*
+   * ============================================================
+   * CATEGORY EDITING / SUBCATEGORY REORDERING
+   * ============================================================
+   */
 
   subcategoryList.classList.add("reorder-mode");
 
@@ -755,31 +931,66 @@ async function loadCategoryPage() {
     .map(
       (sub, index) => `
         <div class="subsection-row">
-          <a class="subsection" href="${categoryUrl(category.id, sub.id)}">
+
+          <a
+            class="subsection"
+            href="${categoryUrl(category.id, sub.id)}"
+          >
             <div>
-              <span class="subsection-number">${formatIndex(index + 1)}</span>
+              <span class="subsection-number">
+                ${formatIndex(index + 1)}
+              </span>
+
               <h2>${escapeHtml(sub.label)}</h2>
             </div>
+
             <span class="arrow">↗︎</span>
           </a>
 
           <div class="reorder-buttons">
-            <button type="button" class="reorder-btn" data-action="up" data-category="${category.id}" data-sub="${sub.id}">↑</button>
-            <button type="button" class="reorder-btn" data-action="down" data-category="${category.id}" data-sub="${sub.id}">↓</button>
+
+            <button
+              type="button"
+              class="reorder-btn"
+              data-action="up"
+              data-category="${category.id}"
+              data-sub="${sub.id}"
+            >
+              ↑
+            </button>
+
+            <button
+              type="button"
+              class="reorder-btn"
+              data-action="down"
+              data-category="${category.id}"
+              data-sub="${sub.id}"
+            >
+              ↓
+            </button>
+
           </div>
+
         </div>
       `
     )
     .join("");
 
-  subcategoryList.querySelectorAll(".reorder-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const categoryId = btn.dataset.category;
-      const subId = btn.dataset.sub;
-      const action = btn.dataset.action;
-      await moveSubcategory(categoryId, subId, action);
+  subcategoryList
+    .querySelectorAll(".reorder-btn")
+    .forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const categoryId = btn.dataset.category;
+        const subId = btn.dataset.sub;
+        const action = btn.dataset.action;
+
+        await moveSubcategory(
+          categoryId,
+          subId,
+          action
+        );
+      });
     });
-  });
 
   entriesContainer.innerHTML = "";
 }
@@ -789,66 +1000,203 @@ async function loadNewEntryPage() {
   if (!session) return;
 
   const titleInput = document.getElementById("title");
-    autoGrowTitle(titleInput);
   const contentEditor = document.getElementById("content");
   const categoryLabel = document.getElementById("article-category");
   const backLink = document.getElementById("back-link");
   const editorInfo = document.getElementById("editor-info");
   const saveButton = document.getElementById("save-entry");
 
-  if (!titleInput || !contentEditor || !categoryLabel || !backLink || !saveButton) return;
+  if (!titleInput) {
+    alert("MISSING: #title");
+    return;
+  }
 
-  setupRichEditor("content", "image-upload", "image-btn");
+  if (!contentEditor) {
+    alert("MISSING: #content");
+    return;
+  }
 
-  const categoryRaw = getParam("category") || "reality";
+  if (!categoryLabel) {
+    alert("MISSING: #article-category");
+    return;
+  }
+
+  if (!backLink) {
+    alert("MISSING: #back-link");
+    return;
+  }
+
+  if (!saveButton) {
+    alert("MISSING: #save-entry");
+    return;
+  }
+
+  /*
+   * GET CATEGORY AND SUBCATEGORY FIRST
+   */
+
+  const categoryRaw = getParam("category") || "";
   const subcategoryRaw = getParam("subcategory") || "";
 
-  const categories = (await loadSiteState()).categories || [];
-  const category = findCategoryByRaw(categories, categoryRaw);
-  const subcategory = category ? findSubcategoryByRaw(category, subcategoryRaw) : null;
+  if (!categoryRaw) {
+    alert("NEW ENTRY ERROR: No category was provided.");
+    return;
+  }
 
-  const categoryId = category ? category.id : categoryRaw;
-  const subcategoryId = subcategory ? subcategory.id : subcategoryRaw;
-  const categoryText = category ? category.label : categoryRaw;
-  const subcategoryText = subcategory ? subcategory.label : subcategoryRaw;
-
-  categoryLabel.textContent = subcategoryText ? `${categoryText} / ${subcategoryText}` : categoryText;
-  if (editorInfo) editorInfo.textContent = categoryLabel.textContent;
-
-  backLink.href = categoryUrl(categoryId, subcategoryId);
+  /*
+   * ATTACH SAVE BUTTON IMMEDIATELY
+   * This means nothing else can prevent SAVE from getting its handler.
+   */
 
   saveButton.onclick = async () => {
-    const title = titleInput.value.trim();
-    const contentHtml = contentEditor.innerHTML
-      .replace(/&nbsp;/g, " ")
-      .replace(/\u00A0/g, " ")
-      .trim();
-      
+    try {
+      const title = titleInput.value.trim();
 
-    if (!title || !hasRenderableContent(contentHtml)) {
-      alert("Please enter a title and some content.");
-      return;
+      const contentHtml = contentEditor.innerHTML
+        .replace(/&nbsp;/g, " ")
+        .replace(/\u00A0/g, " ")
+        .trim();
+
+      if (!title) {
+        alert("Please enter a title.");
+        return;
+      }
+
+      if (!hasRenderableContent(contentHtml)) {
+        alert("Please enter some content.");
+        return;
+      }
+
+      saveButton.disabled = true;
+      saveButton.textContent = "SAVING...";
+
+      const categories = (await loadSiteState()).categories || [];
+
+      const category = findCategoryByRaw(categories, categoryRaw);
+
+      if (!category) {
+        throw new Error(
+          `Category not found.\n\nReceived category: ${categoryRaw}`
+        );
+      }
+
+      const subcategory = subcategoryRaw
+        ? findSubcategoryByRaw(category, subcategoryRaw)
+        : null;
+
+      const categoryId = category.id;
+
+      const subcategoryId = subcategory
+        ? subcategory.id
+        : subcategoryRaw;
+
+      if (subcategoryRaw && !subcategoryId) {
+        throw new Error(
+          `Subcategory ID is missing.\n\nReceived subcategory: ${subcategoryRaw}`
+        );
+      }
+
+      console.log("SAVING ENTRY:");
+      console.log("Category:", categoryId);
+      console.log("Subcategory:", subcategoryId);
+      console.log("Title:", title);
+
+      const { data, error } = await supabaseClient
+        .from("articles")
+        .insert([
+          {
+            title: title,
+            content: contentHtml,
+            category: categoryId,
+            subcategory: subcategoryId,
+          },
+        ])
+        .select();
+
+      if (error) {
+        throw new Error(
+          `SUPABASE SAVE ERROR:\n\n${error.message}`
+        );
+      }
+
+      console.log("ENTRY SAVED:", data);
+
+      window.location.href = categoryUrl(
+        categoryId,
+        subcategoryId
+      );
+
+    } catch (error) {
+      console.error("NEW ENTRY SAVE ERROR:", error);
+
+      alert(
+        "NEW ENTRY SAVE ERROR:\n\n" +
+        (error?.message || String(error))
+      );
+
+      saveButton.disabled = false;
+      saveButton.textContent = "SAVE";
     }
-
-    const { error } = await supabaseClient
-      .from("articles")
-      .insert([
-        {
-          title,
-          content: contentHtml,
-          category: categoryId,
-          subcategory: subcategoryId,
-        },
-      ]);
-
-    if (error) {
-      alert("SAVE ERROR:\n\n" + error.message);
-      return;
-    }
-
-    window.location.href = categoryUrl(categoryId, subcategoryId);
   };
 
+  /*
+   * LOAD CATEGORY INFORMATION FOR DISPLAY
+   */
+
+  try {
+    const categories = (await loadSiteState()).categories || [];
+
+    const category = findCategoryByRaw(categories, categoryRaw);
+
+    if (!category) {
+      throw new Error(
+        `Category not found: ${categoryRaw}`
+      );
+    }
+
+    const subcategory = subcategoryRaw
+      ? findSubcategoryByRaw(category, subcategoryRaw)
+      : null;
+
+    const categoryText = category.label;
+
+    const subcategoryText = subcategory
+      ? subcategory.label
+      : subcategoryRaw;
+
+    categoryLabel.textContent = subcategoryText
+      ? `${categoryText} / ${subcategoryText}`
+      : categoryText;
+
+    if (editorInfo) {
+      editorInfo.textContent = categoryLabel.textContent;
+    }
+
+    backLink.href = categoryUrl(
+      category.id,
+      subcategory ? subcategory.id : subcategoryRaw
+    );
+
+  } catch (error) {
+    console.error("NEW ENTRY LOAD ERROR:", error);
+
+    alert(
+      "NEW ENTRY LOAD ERROR:\n\n" +
+      (error?.message || String(error))
+    );
+  }
+
+  /*
+   * EDITOR SETUP
+   */
+
+  autoGrowTitle(titleInput);
+
+  setupRichEditor(
+    "content",
+    "image-upload",
+    "image-btn"
+  );
 }
 
 async function loadArticlePage() {
