@@ -6,15 +6,38 @@
   <title>Edit Article — YENA</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [
+        ["\\(", "\\)"]
+      ],
+      displayMath: [
+        ["\\[", "\\]"]
+      ]
+    }
+  };
+  </script>
+
+  <script
+    id="MathJax-script"
+    async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+  </script>
 </head>
 <body>
 
   <main class="page">
+    <div class="article-toc-wrapper">
+      <div class="article-toc-trigger"></div>
+      <nav id="article-toc" class="article-toc"></nav>
+    </div>
     <header class="page-header">
       <a href="#" class="back" onclick="event.preventDefault(); window.history.back();">← BACK</a>
 
       <div class="article-header-right">
-        <span class="page-number">EDIT ARTICLE</span>
+        <span class="page-number" id="save-status">SAVED</span>
+        
         <div class="article-actions">
           <button id="delete-edit-button" class="action-button danger" type="button">DELETE</button>
           <button id="save-edit-button" class="action-button" type="button">SAVE</button>
@@ -44,6 +67,51 @@
         <button type="button" id="image-btn">Image</button>
         <button type="button" id="embed-btn">Embed</button>
         <button type="button" id="box-btn">Box</button>
+
+        <button type="button"
+          data-cmd="formatBlock"
+          data-format="h1"
+          title="Heading 1"
+        >
+          H1
+        </button>
+
+        <button
+          type="button"
+          data-cmd="formatBlock"
+          data-format="h2"
+          title="Heading 2"
+        >
+          H2
+        </button>
+
+        <button
+          type="button"
+          data-cmd="formatBlock"
+          data-format="h3"
+          title="Heading 3"
+        >
+          H3
+        </button>
+
+        <button
+          type="button"
+          data-cmd="normalText"
+          title="Normal text"
+        >
+          Normal
+        </button>
+
+        <button
+          type="button"
+          id="center-btn"
+          title="Center text"
+        >
+          ≡
+        </button>
+        <button type="button" id="latex-preview-btn">LaTeX Preview</button>
+
+
         <input type="file" id="image-upload" accept="image/*" hidden />
       </div>
 
@@ -56,6 +124,8 @@
         contenteditable="true"
         spellcheck="true"
       ></div>
+
+      <div id="latex-live-preview" class="latex-live-preview"></div>
 
       <div class="editor-bottom">
         <div class="editor-info" id="edit-meta"></div>
